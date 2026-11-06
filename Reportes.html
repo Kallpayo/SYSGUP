@@ -33,6 +33,25 @@
       </p>
     </div>
 
+    <!-- [NUEVO Req-4] Tarjeta 4: Actas de Consultas Presenciales -->
+    <div id="cardReporteActas" onclick="ReportesModule.selectReportType('actas')"
+      class="cursor-pointer bg-white p-6 rounded-xl border-2 border-slate-200 hover:border-indigo-500 shadow-sm transition-all flex flex-col items-center text-center group">
+      <div class="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+        <i class="fas fa-file-signature text-2xl text-rose-600"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-800 mb-1">Actas de Consulta</h3>
+      <p class="text-xs text-slate-500">Genere e imprima actas de consultas presenciales con pie de firmas.</p><!-- Tarjeta 3: Trámites Quipux -->
+    <div id="cardReporteQuipux" onclick="ReportesModule.selectReportType('quipux')"
+      class="cursor-pointer bg-white p-6 rounded-xl border-2 border-slate-200 hover:border-indigo-500 shadow-sm transition-all flex flex-col items-center text-center group">
+      <div class="w-14 h-14 bg-sky-100 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+        <i class="fas fa-envelope-open-text text-2xl text-sky-600"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-800 mb-1">Trámites Quipux</h3>
+      <p class="text-xs text-slate-500">
+        Consulte y exporte a Excel los trámites Quipux por facultad.
+      </p>
+    </div>
+
     <!-- Tarjeta 2: PDF Actas de Reunión -->
     <div id="cardReportePdf" onclick="ReportesModule.selectReportType('pdf')"
       class="cursor-pointer bg-white p-6 rounded-xl border-2 border-slate-200 hover:border-indigo-500 shadow-sm transition-all flex flex-col items-center text-center group">
@@ -45,26 +64,7 @@
       </p>
     </div>
 
-    <!-- Tarjeta 3: Trámites Quipux -->
-    <div id="cardReporteQuipux" onclick="ReportesModule.selectReportType('quipux')"
-      class="cursor-pointer bg-white p-6 rounded-xl border-2 border-slate-200 hover:border-indigo-500 shadow-sm transition-all flex flex-col items-center text-center group">
-      <div class="w-14 h-14 bg-sky-100 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-        <i class="fas fa-envelope-open-text text-2xl text-sky-600"></i>
-      </div>
-      <h3 class="text-base font-bold text-slate-800 mb-1">Trámites Quipux</h3>
-      <p class="text-xs text-slate-500">
-        Consulte y exporte a Excel los trámites Quipux por facultad.
-      </p>
-    </div>
-
-    <!-- [NUEVO Req-4] Tarjeta 4: Actas de Consultas Presenciales -->
-    <div id="cardReporteActas" onclick="ReportesModule.selectReportType('actas')"
-      class="cursor-pointer bg-white p-6 rounded-xl border-2 border-slate-200 hover:border-indigo-500 shadow-sm transition-all flex flex-col items-center text-center group">
-      <div class="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-        <i class="fas fa-file-signature text-2xl text-rose-600"></i>
-      </div>
-      <h3 class="text-base font-bold text-slate-800 mb-1">Actas de Consulta</h3>
-      <p class="text-xs text-slate-500">Genere e imprima actas de consultas presenciales con pie de firmas.</p>
+    
     </div>
 
   </div>
