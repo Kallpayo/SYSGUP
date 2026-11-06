@@ -104,8 +104,8 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="chart-card-dash">
-          <h3 class="text-sm font-bold text-slate-700 uppercase mb-3">Distribución de Programas por Estado</h3>
-          <div id="chart-estado-regulatorio" class="w-full h-64"></div>
+          <h3 class="text-sm font-bold text-slate-700 uppercase mb-3">Programas por Facultad y Periodo</h3>
+          <div id="tabla-programas-panorama" class="w-full overflow-x-auto"></div>
         </div>
         <div class="chart-card-dash">
           <h3 class="text-sm font-bold text-slate-700 uppercase mb-3">Oferta por Modalidad de Estudio</h3>
@@ -352,6 +352,35 @@
       }
     }
 
+    function renderProgramasPanoramaTable(rows) {
+      const host = document.getElementById('tabla-programas-panorama');
+      if (!host) return;
+      host.innerHTML = '';
+      const table = document.createElement('table');
+      table.className = 'w-full min-w-[640px] text-xs text-left border-collapse';
+      const thead = document.createElement('thead');
+      thead.className = 'bg-slate-100 text-slate-600 uppercase';
+      const headRow = document.createElement('tr');
+      ['Nombre del Programa', 'Mención', 'Estado', 'Periodo'].forEach(label => {
+        const th = document.createElement('th'); th.className = 'px-3 py-3 border-b font-bold'; th.textContent = label; headRow.appendChild(th);
+      });
+      thead.appendChild(headRow); table.appendChild(thead);
+      const tbody = document.createElement('tbody'); tbody.className = 'divide-y divide-slate-100';
+      if (!Array.isArray(rows) || rows.length === 0) {
+        const tr = document.createElement('tr'); const td = document.createElement('td');
+        td.colSpan = 4; td.className = 'px-3 py-8 text-center text-slate-400';
+        td.textContent = 'No existen programas para los filtros seleccionados.'; tr.appendChild(td); tbody.appendChild(tr);
+      } else {
+        rows.forEach(item => {
+          const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50';
+          [item.nombrePrograma, item.mencion, item.estado, item.periodo].forEach(value => {
+            const td = document.createElement('td'); td.className = 'px-3 py-3 align-top text-slate-700'; td.textContent = value || '—'; tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      }
+      table.appendChild(tbody); host.appendChild(table);
+    }
     function renderActiveTab() {
       if (!dbData) return;
       const k = dbData.kpis || {};
@@ -366,7 +395,7 @@
         document.getElementById('kpi-costo-maestrias').textContent = `$${k.costoPromedio || '0.00'}`;
         document.getElementById('kpi-riesgo-ces').textContent = `${k.porcentajeRiesgo || '0.0'}%`;
 
-        drawPieChart('chart-estado-regulatorio', c.programasPorEstado, ['#4f46e5', '#10b981', '#f59e0b', '#ef4444']);
+        renderProgramasPanoramaTable(t.programasPanorama || []);
         drawPieChart('chart-modalidad-programas', c.programasPorModalidad, ['#0284c7', '#8b5cf6', '#059669']);
       }
       else if (activeTab === 'facultad') {
