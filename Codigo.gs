@@ -2979,28 +2979,34 @@ function getDashboardData(filtros) {
     let extensionesFiltradas = extensiones;
 
     // ── 1. FILTRADO POR FACULTAD ──────────────────────────────────────────────
+    // [FIX] Antes se usaba "includes()" (subcadena), lo que hacía que al elegir
+    // una facultad cuyo nombre aparece dentro del nombre de otras (p. ej.
+    // "CIENCIAS" ⊂ "FACULTAD DE CIENCIAS AGROPECUARIAS") el filtro capturara
+    // programas de otras facultades y pareciera que no filtraba nada.
+    // Ahora se compara igualdad normalizada (sin acentos, minúsculas).
+    const _normFac = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
     if (filtros.facultad && filtros.facultad.trim() !== '') {
-      const facNorm = filtros.facultad.trim().toLowerCase();
+      const facNorm = _normFac(filtros.facultad);
 
-      programasFiltrados = programasFiltrados.filter(p => p.facultad && p.facultad.trim().toLowerCase().includes(facNorm));
+      programasFiltrados = programasFiltrados.filter(p => _normFac(p.facultad) === facNorm);
 
       cohortesFiltradas = cohortesFiltradas.filter(c => {
         const prog = programaMap[c.programaID];
-        return prog && prog.facultad && prog.facultad.trim().toLowerCase().includes(facNorm);
+        return prog && _normFac(prog.facultad) === facNorm;
       });
 
       consultasFiltradas = consultasFiltradas.filter(c => {
-        const facReunion = c.facultadReunion ? c.facultadReunion.trim().toLowerCase() : '';
+        const facReunion = _normFac(c.facultadReunion);
         const usr = usuarioMap[c.usuarioID];
-        const facUsr = (usr && usr.facultad) ? usr.facultad.trim().toLowerCase() : '';
-        return facReunion.includes(facNorm) || facUsr.includes(facNorm);
+        const facUsr = usr ? _normFac(usr.facultad) : '';
+        return facReunion === facNorm || facUsr === facNorm;
       });
 
       extensionesFiltradas = extensionesFiltradas.filter(e => {
         const coh = cohorteMap[e.cohorteID];
         if (!coh) return false;
         const prog = programaMap[coh.programaID];
-        return prog && prog.facultad && prog.facultad.trim().toLowerCase().includes(facNorm);
+        return prog && _normFac(prog.facultad) === facNorm;
       });
     }
 
@@ -4829,17 +4835,26 @@ function getConsultasPresencialesPorRango(fechaInicio, fechaFin) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SECCIÓN B: CICLO DE VIDA DEL PROGRAMA + REDISEÑOS (Req 5)
+// SECCIÓN B: CICLO DE VIDA DEL PROGRAMA + AJUSTES CURRICULARES (Req 5)
 // Marco normativo de referencia: Art. 46-49 RUGS (creación/acreditación),
-// Res. CES sobre reformulación/rediseño de programas: un programa aprobado
-// puede sufrir cambios SUSTANTIVOS (pensum, duración/periodos, mención,
-// modalidad -> registro modificado en SNIESE) o NO SUSTANTIVOS (ajustes
-// menores). El rediseño NO reinicia la fase propositiva: hereda la
-// aprobación original (HCU/CES/SNIESE) y genera una NUEVA VERSIÓN que
-// marca cohortes distintas pre/post-cambio.
+// Res. CES sobre reformulación de programas. [REGLA DE NEGOCIO ACTUALIZADA]
+// Ya no existe "Rediseño": solo hay AJUSTES CURRICULARES con dos tipos:
+//  • SUSTANTIVOS       -> el programa original pasa a "No Vigente HRT" y se
+//                         crea un NUEVO programa (código SNIESE pendiente,
+//                         se completa luego en Seguimiento Regulatorio).
+//  • NO SUSTANTIVOS    -> se registra el cambio en la historia de vida del
+//                         MISMO programa; sigue VIGENTE y abre cohortes.
+//    EXCEPCIÓN: si el ajuste No Sustantivo implica CAMBIO DE MODALIDAD,
+//    se actúa como Sustantivo (original -> No Vigente HRT + nuevo programa).
 // ─────────────────────────────────────────────────────────────
-const TIPOS_CAMBIO_PROGRAMA = ['REDISEÑO', 'CAMBIO SUSTANTIVO', 'CAMBIO NO SUSTANTIVO', 'ACTUALIZACIÓN NORMATIVA'];
+const TIPOS_CAMBIO_PROGRAMA = ['AJUSTE SUSTANTIVO', 'AJUSTE NO SUSTANTIVO'];
+const ESTADO_NO_VIGENTE_HRT = 'No Vigente HRT'; // literal tomado de la hoja CONFIG
 const CAMPOS_NUCLEALES_PROGRAMA = ['facultad', 'coordinadorID', 'nombrePrograma', 'mencion', 'modalidad', 'duracion', 'costoAproximado'];
+
+/** Determina si un estado representa un programa vigente (tolerante a mayúsculas/acentos). */
+function _esEstadoVigente(estado) {
+  return String(estado || '').trim().toLowerCase() === 'vigente';
+}
 
 function _ensureHojaCambios() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -4873,12 +4888,42 @@ function getHistorialCambiosPrograma(programaID) {
   } catch (e) { logActivity('ERROR', 'getHistorialCambiosPrograma: ' + e.message); return JSON.stringify([]); }
 }
 
-/** Registro auditable de rediseño/cambio sobre programa VIGENTE. No toca la fase regulatoria. */
+/**
+ * Registro auditable de AJUSTE CURRICULAR sobre programa VIGENTE.
+ * [REGLA DE NEGOCIO]
+ *  • AJUSTE SUSTANTIVO (o NO SUSTANTIVO con cambio de modalidad):
+ *      1) Se registra la acción en el historial del programa original (CAMBIOS_PROGRAMA).
+ *      2) El original pasa de "Vigente" a "No Vigente HRT".
+ *      3) Se crea un NUEVO programa en PROGRAMAPOSGRADO copiando los datos del
+ *         viejo, con código SNIESE vacío/pendiente (se completa después desde
+ *         Seguimiento Regulatorio) y estado "Registro".
+ *      4) Se crea una observación-vínculo idéntica en la historia de vida del
+ *         programa viejo Y del nuevo.
+ *  • AJUSTE NO SUSTANTIVO sin cambio de modalidad:
+ *      Solo se registra en la historia de vida del MISMO programa; sigue
+ *      VIGENTE y continúa abriendo cohortes. No se crea un nuevo programa.
+ */
 function registrarCambioPrograma(payload) {
   try {
     if (!payload || !payload.programaID) return { success: false, message: 'Falta ProgramaID.' };
-    if (!TIPOS_CAMBIO_PROGRAMA.includes(String(payload.tipoCambio))) return { success: false, message: 'Tipo de cambio inválido. Use: ' + TIPOS_CAMBIO_PROGRAMA.join(', ') };
-    if (!payload.descripcion || String(payload.descripcion).trim() === '') return { success: false, message: 'La descripción del cambio es obligatoria (auditable).' };
+
+    // Normalización retro-compatible de tipos antiguos hacia la nomenclatura vigente
+    let tipo = String(payload.tipoCambio || '').trim().toUpperCase();
+    if (tipo === 'REDISEÑO' || tipo === 'CAMBIO SUSTANTIVO') tipo = 'AJUSTE SUSTANTIVO';
+    if (tipo === 'CAMBIO NO SUSTANTIVO' || tipo === 'ACTUALIZACIÓN NORMATIVA') tipo = 'AJUSTE NO SUSTANTIVO';
+    if (!TIPOS_CAMBIO_PROGRAMA.includes(tipo)) {
+      return { success: false, message: 'Tipo de ajuste inválido. Use: ' + TIPOS_CAMBIO_PROGRAMA.join(' | ') };
+    }
+    if (!payload.descripcion || String(payload.descripcion).trim() === '') {
+      return { success: false, message: 'La descripción del ajuste es obligatoria (auditable).' };
+    }
+
+    const vaAModalidad = payload.cambiaModalidad === true || payload.cambiaModalidad === 'true' || payload.cambiaModalidad === 1;
+    if (vaAModalidad && (!payload.modalidadNueva || String(payload.modalidadNueva).trim() === '')) {
+      return { success: false, message: 'Indicó cambio de modalidad pero no seleccionó la nueva modalidad.' };
+    }
+    // Sustantivo => siempre genera nuevo programa; No Sustantivo => solo si cambia modalidad
+    const generaNuevoPrograma = (tipo === 'AJUSTE SUSTANTIVO') || vaAModalidad;
 
     const lock = LockService.getScriptLock();
     lock.waitLock(20000);
@@ -4886,41 +4931,147 @@ function registrarCambioPrograma(payload) {
       const programas = JSON.parse(getSheetData('PROGRAMAPOSGRADO'));
       const prog = programas.find(p => String(p.programaID).trim() === String(payload.programaID).trim());
       if (!prog) return { success: false, message: `Programa ${payload.programaID} no encontrado.` };
-      if (prog.estadoPropuesta !== 'Vigente') return { success: false, message: 'Solo los programas VIGENTES admiten rediseños/cambios. Mientras está en fase previa use "Modificar".' };
+      if (!_esEstadoVigente(prog.estadoPropuesta)) {
+        return { success: false, message: 'Solo los programas VIGENTES admiten Ajustes Curriculares. Mientras está en fase previa use "Modificar".' };
+      }
 
+      const nowStr = Utilities.formatDate(new Date(), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+      const hoyDDMMYYYY = nowStr.slice(0, 10).split('-').reverse().join('/');
       const historial = JSON.parse(getHistorialCambiosPrograma(prog.programaID));
-      const nuevaVersion = 'V' + (historial.length + 2); // Original=V1, primer rediseño=V2
+      const nuevaVersion = 'V' + (historial.length + 2); // Original=V1, primer ajuste=V2
 
+      // Modalidad efectiva del programa ajustado
+      const modalidadOriginal = String(prog.modalidad || '').trim();
+      const modalidadNueva = vaAModalidad ? String(payload.modalidadNueva).trim() : modalidadOriginal;
+      if (vaAModalidad && modalidadNueva.toLowerCase() === modalidadOriginal.toLowerCase()) {
+        return { success: false, message: 'La nueva modalidad seleccionada es igual a la actual; no hay cambio de modalidad.' };
+      }
+
+      // Texto de la observación-vínculo (misma redacción para ambos programas)
+      const motivo = vaAModalidad
+        ? `Cambio de modalidad: "${modalidadOriginal}" → "${modalidadNueva}".`
+        : '';
+      const descObsVinculo = `AJUSTE CURRICULAR ${tipo === 'AJUSTE SUSTANTIVO' ? 'SUSTANTIVO' : 'NO SUSTANTIVO'} (${nuevaVersion})` +
+        (motivo ? ` — ${motivo}` : '') +
+        ` — ${String(payload.descripcion).trim()}` +
+        ` [Res. CES: ${payload.resolucionCES || 's/n'}]`;
+
+      // PASO 3: crear el nuevo programa (copiando los datos del viejo) ANTES de registrar
+      let nuevoProgramaInfo = null;
+      if (generaNuevoPrograma) {
+        const dataNuevo = {
+          facultad: prog.facultad,
+          coordinadorID: prog.coordinadorID,
+          nombrePrograma: payload.nombreProgramaNuevo || prog.nombrePrograma,
+          mencion: payload.mencionNueva || prog.mencion || '',
+          modalidad: modalidadNueva,
+          duracion: payload.duracionNueva || prog.duracion,
+          costoAproximado: payload.costoAproximadoNuevo !== undefined && String(payload.costoAproximadoNuevo).trim() !== ''
+            ? payload.costoAproximadoNuevo : prog.costoAproximado,
+          estadoPropuesta: 'Registro', // inicia fase propositiva; SNIESE pendiente
+          codigoSNIESE: '',            // vacío/pendiente: se edita en Seguimiento Regulatorio
+          resolucionHCU: '', fechaAprobacionHCU: '',
+          resolucionCES: '', fechaAprobacionCES: '', vigenciaHasta: ''
+        };
+        const resCrear = createProgramaPosgrado(dataNuevo);
+        if (!resCrear || !resCrear.success) {
+          return { success: false, message: 'No se pudo crear el programa ajustado: ' + (resCrear ? resCrear.message : 'error desconocido') };
+        }
+        nuevoProgramaInfo = JSON.parse(resCrear.programa);
+      }
+
+      // PASO 2: el original pasa a "No Vigente HRT" al guardar el ajuste (solo si genera nuevo programa)
+      if (generaNuevoPrograma) {
+        updateProgramaPosgrado({ programaID: prog.programaID, estadoPropuesta: ESTADO_NO_VIGENTE_HRT });
+      }
+
+      // PASO 1: registro auditable del ajuste en el historial del programa original
       const sheet = _ensureHojaCambios();
       const cambioID = generateNextId('CAMBIOS_PROGRAMA', 'CAM') || ('CAM' + String(sheet.getLastRow()).padStart(3, '0'));
-      const nowStr = Utilities.formatDate(new Date(), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm:ss');
-      sheet.appendRow([cambioID, prog.programaID, payload.tipoCambio, payload.fechaCambio || nowStr.slice(0, 10),
-        String(payload.descripcion).trim(), payload.anterior || '', payload.nuevo || '',
+      sheet.appendRow([cambioID, prog.programaID, tipo, payload.fechaCambio || nowStr.slice(0, 10),
+        String(payload.descripcion).trim(),
+        vaAModalidad ? `Modalidad: ${modalidadOriginal}` : '',
+        vaAModalidad ? `Modalidad: ${modalidadNueva}` : '',
         payload.resolucionCES || '', payload.resolucionHCU || '', nuevaVersion, nowStr]);
 
+      // PASO 4: observación-vínculo en la historia de vida (viejo y nuevo)
+      const obsViejo = createObservacion({
+        programaID: prog.programaID, descripcion: descObsVinculo,
+        fechaObservacion: hoyDDMMYYYY, fechaCorreccionEsperada: nowStr.slice(0, 10), fechaCorreccionRecibida: nowStr.slice(0, 10)
+      });
+      let obsNuevoOk = true;
+      if (nuevoProgramaInfo) {
+        const resObsNuevo = createObservacion({
+          programaID: nuevoProgramaInfo.programaID, descripcion: descObsVinculo,
+          fechaObservacion: hoyDDMMYYYY, fechaCorreccionEsperada: nowStr.slice(0, 10), fechaCorreccionRecibida: nowStr.slice(0, 10)
+        });
+        obsNuevoOk = !!(resObsNuevo && resObsNuevo.success);
+      }
+
       invalidateConfigCache();
-      logActivity('INFO', `registrarCambioPrograma: ${cambioID} (${payload.tipoCambio}) registrado para ${prog.programaID} como ${nuevaVersion}.`);
-      return { success: true, message: `Cambio registrado: ${cambioID} — versión ${nuevaVersion}.`, cambioID: cambioID, version: nuevaVersion };
+      logActivity('INFO', `registrarCambioPrograma: ${cambioID} (${tipo}) registrado para ${prog.programaID} como ${nuevaVersion}.` +
+        (nuevoProgramaInfo ? ` Nuevo programa: ${nuevoProgramaInfo.programaID}; original → ${ESTADO_NO_VIGENTE_HRT}.` : ' Sin nuevo programa (no sustantivo).'));
+
+      let mensaje = `Ajuste curricular registrado: ${cambioID} — versión ${nuevaVersion}.`;
+      if (nuevoProgramaInfo) {
+        mensaje = `Ajuste curricular registrado. El programa ${prog.programaID} pasó a "${ESTADO_NO_VIGENTE_HRT}" y se creó el programa ajustado ${nuevoProgramaInfo.programaID} (Código SNIESE pendiente: complételo en Seguimiento Regulatorio).`;
+      }
+      if (!obsViejo.success || !obsNuevoOk) {
+        mensaje += ' Advertencia: no se pudo crear la observación-vínculo en uno de los programas.';
+      }
+      return {
+        success: true, message: mensaje, cambioID: cambioID, version: nuevaVersion,
+        nuevoProgramaID: nuevoProgramaInfo ? nuevoProgramaInfo.programaID : null,
+        estadoAnteriorPrograma: prog.estadoPropuesta,
+        estadoNuevoPrograma: generaNuevoPrograma ? ESTADO_NO_VIGENTE_HRT : prog.estadoPropuesta
+      };
     } finally { lock.releaseLock(); }
   } catch (e) {
     logActivity('ERROR', 'registrarCambioPrograma: ' + e.message);
-    return { success: false, message: 'Error al registrar cambio: ' + e.message };
+    return { success: false, message: 'Error al registrar ajuste curricular: ' + e.message };
   }
 }
 
-/** Regla de bloqueo para el frontend: Vigente congela nucleales, permite complementario + rediseño */
+/** Regla de bloqueo para el frontend: Vigente congela nucleales, permite complementario + ajuste curricular */
 function getPermisosEdicionPrograma(programaID) {
   try {
     const programas = JSON.parse(getSheetData('PROGRAMAPOSGRADO'));
     const prog = programas.find(p => String(p.programaID).trim() === String(programaID).trim());
     if (!prog) return JSON.stringify({ existe: false });
-    const vigente = prog.estadoPropuesta === 'Vigente';
+    const vigente = _esEstadoVigente(prog.estadoPropuesta);
     return JSON.stringify({
       existe: true, vigente: vigente,
       puedeEditarNucleales: !vigente,
       puedeEditarComplementario: true,
       puedeRegistrarCambio: vigente,
       historialCount: JSON.parse(getHistorialCambiosPrograma(prog.programaID)).length
+    });
+  } catch (e) { return JSON.stringify({ existe: false, error: e.message }); }
+}
+
+/** Utilidades para el modal de Ajuste Curricular del formulario de programas */
+function getModalidadesParaAjuste() {
+  try {
+    const modalidades = getDropdownData('Modalidades');
+    return JSON.stringify(Array.isArray(modalidades) ? modalidades : []);
+  } catch (e) { return JSON.stringify([]); }
+}
+
+function getDatosProgramaParaAjuste(programaID) {
+  try {
+    const programas = JSON.parse(getSheetData('PROGRAMAPOSGRADO'));
+    const prog = programas.find(p => String(p.programaID).trim() === String(programaID).trim());
+    if (!prog) return JSON.stringify({ existe: false });
+    return JSON.stringify({
+      existe: true,
+      programaID: prog.programaID,
+      facultad: prog.facultad || '',
+      nombrePrograma: prog.nombrePrograma || '',
+      mencion: prog.mencion || '',
+      modalidad: prog.modalidad || '',
+      duracion: prog.duracion || '',
+      costoAproximado: prog.costoAproximado || '',
+      estadoPropuesta: prog.estadoPropuesta || ''
     });
   } catch (e) { return JSON.stringify({ existe: false, error: e.message }); }
 }
@@ -4942,7 +5093,17 @@ function generarHtmlVidaPrograma(programaID) {
       : `<table style="width:100%;border-collapse:collapse;margin:8px 0;">${fila(heads, true)}${rows.map(r => fila(r)).join('')}</table>`;
 
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vida del Programa ${_escapeHtml(prog.programaID)}</title>
-    <style>body{font-family:Arial;padding:25px;color:#1e293b;} h1{font-size:17px;text-transform:uppercase;border-bottom:2px solid #1e293b;padding-bottom:8px;} h2.sec{font-size:13px;margin-top:22px;text-transform:uppercase;}</style></head><body>
+    <style>body{font-family:Arial;padding:25px;color:#1e293b;} h1{font-size:17px;text-transform:uppercase;border-bottom:2px solid #1e293b;padding-bottom:8px;} h2.sec{font-size:13px;margin-top:22px;text-transform:uppercase;} @media print { body{padding:0;} }</style>
+    <script>
+      // [NUEVO] Al abrir esta ventana con "?print=pdf" se lanza el diálogo de
+      // impresión del navegador, donde el usuario puede "Guardar como PDF".
+      window.addEventListener('load', function () {
+        if (location.search.indexOf('print=pdf') !== -1) { setTimeout(function () { window.print(); }, 400); }
+      });
+    </script></head><body>
+      <div style="text-align:right;margin-bottom:10px;">
+        <button onclick="window.print()" style="background:#1e293b;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:bold;">🖨️ Descargar / Imprimir (PDF)</button>
+      </div>
       <h1>Historia de Vida del Programa de Posgrado</h1>
       <h2 style="font-size:14px;margin:4px 0;">${_escapeHtml(prog.nombrePrograma)}</h2>
       ${tabla(['Campo', 'Valor'], [
@@ -4955,7 +5116,7 @@ function generarHtmlVidaPrograma(programaID) {
       <h2 class="sec">1. Observaciones Regulatorias (${obs.length})</h2>
       ${tabla(['ID', 'Fecha Obs.', 'Límite Corrección', 'Recibida', 'Semáforo', 'Descripción'],
         obs.map(o => [o.observacionID, o.fechaObservacion, o.fechaCorreccionEsperada, o.fechaCorreccionRecibida || '—', o.estadoSemaforo || '', o.descripcion]))}
-      <h2 class="sec">2. Rediseños y Cambios Registrados (${cambios.length})</h2>
+      <h2 class="sec">2. Ajustes Curriculares y Cambios Registrados (${cambios.length})</h2>
       ${tabla(['ID', 'Tipo', 'Fecha', 'Versión', 'Descripción', 'Anterior', 'Nuevo', 'Resol. CES'],
         cambios.map(c => [c.cambioID, c.tipoCambio, c.fechaCambio, c.version, c.descripcion, c.anterior || '—', c.nuevo || '—', c.resolucionCES || '—']))}
       <h2 class="sec">3. Cohortes (${cohortes.length})</h2>
