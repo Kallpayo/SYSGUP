@@ -1,4 +1,4 @@
-// Comentario de prueba exitosa!!!
+// !Prueba d conección exitosa!
 const SHEETS_CONFIG = {
  USUARIO: {
  sheetName: 'USUARIO',
