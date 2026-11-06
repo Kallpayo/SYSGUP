@@ -764,10 +764,11 @@
 
   // ── SPOTLIGHT HERO ───────────────────────────────────────────────────────
   
-  (function initSpotlight() {
+  window.initSpotlightHero = function initSpotlightHero() {
     const container = document.getElementById('hero-container');
     const overlay   = document.getElementById('hero-overlay');
-    if (!container || !overlay) return;
+    if (!container || !overlay || container.dataset.spotlightInitialized === 'true') return;
+    container.dataset.spotlightInitialized = 'true';
 
     container.addEventListener('mousemove', e => {
       const r = container.getBoundingClientRect();
@@ -780,7 +781,8 @@
     container.addEventListener('mouseleave', () => {
       overlay.style.background = 'rgba(15,23,42,0.82)';
     });
-  })();
+  };
+  window.initSpotlightHero();
 
   // ── CONTROLADOR PRINCIPAL ────────────────────────────────────────────────
   const App = {
@@ -983,6 +985,8 @@ window.loadView = function(page, params = {}, element) {
     if (contentArea && window.initialHomeHTML) {
       // Restaurar el HTML original de bienvenida e indicadores
       contentArea.innerHTML = window.initialHomeHTML;
+      // El HTML restaurado crea un nuevo hero-container; volver a enlazar el efecto spotlight.
+      if (typeof window.initSpotlightHero === 'function') window.initSpotlightHero();
       
       // Quitar la marca de botón activo del menú lateral
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
