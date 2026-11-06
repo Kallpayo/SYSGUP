@@ -2984,7 +2984,7 @@ function getDashboardData(filtros) {
     // "CIENCIAS" ⊂ "FACULTAD DE CIENCIAS AGROPECUARIAS") el filtro capturara
     // programas de otras facultades y pareciera que no filtraba nada.
     // Ahora se compara igualdad normalizada (sin acentos, minúsculas).
-    const _normFac = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    const _normFac = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/^facultad(?:\s+de|\s+del)?\s+/, '');
     if (filtros.facultad && filtros.facultad.trim() !== '') {
       const facNorm = _normFac(filtros.facultad);
 
@@ -3075,7 +3075,22 @@ function getDashboardData(filtros) {
       extensionesPorMes: prepararExtensionesPorMes(extensionesFiltradas),
     };
 
+    // Tabla del Panorama Institucional: periodos asociados a cada programa.
+    const periodosPorPrograma = new Map();
+    cohortesFiltradas.forEach(c => {
+      if (!c.programaID || !c.periodoAcademico) return;
+      if (!periodosPorPrograma.has(c.programaID)) periodosPorPrograma.set(c.programaID, new Set());
+      periodosPorPrograma.get(c.programaID).add(String(c.periodoAcademico).trim());
+    });
+    const programasPanorama = programasFiltrados.map(p => ({
+      nombrePrograma: p.nombrePrograma || '',
+      mencion: p.mencion || '',
+      estado: p.estadoPropuesta || '',
+      periodo: periodosPorPrograma.has(p.programaID) ? [...periodosPorPrograma.get(p.programaID)].sort().join(', ') : 'Sin cohorte registrada'
+    })).sort((a, b) => a.nombrePrograma.localeCompare(b.nombrePrograma, 'es'));
+
     const tables = {
+      programasPanorama,
       programasConObs: prepararProgramasConObservaciones(observacionesFiltradas, programas),
       cohortePorEstado: prepararCohortePorEstado(cohortesFiltradas, programasFiltrados, filtros.estadoCohorte),
       cohortesPorPrograma: prepararCohortesPorPrograma(cohortesFiltradas, programasFiltrados),
@@ -4919,7 +4934,10 @@ function registrarCambioPrograma(payload) {
     }
 
     const vaAModalidad = payload.cambiaModalidad === true || payload.cambiaModalidad === 'true' || payload.cambiaModalidad === 1;
-    if (vaAModalidad && (!payload.modalidadNueva || String(payload.modalidadNueva).trim() === '')) {
+    // La excepción de cambio de modalidad corresponde exclusivamente al Ajuste No Sustantivo.
+    if (vaAModalidad && tipo !== 'AJUSTE NO SUSTANTIVO') {
+      return { success: false, message: 'El cambio de modalidad solo está permitido en un Ajuste No Sustantivo.' };
+    }    if (vaAModalidad && (!payload.modalidadNueva || String(payload.modalidadNueva).trim() === '')) {
       return { success: false, message: 'Indicó cambio de modalidad pero no seleccionó la nueva modalidad.' };
     }
     // Sustantivo => siempre genera nuevo programa; No Sustantivo => solo si cambia modalidad
