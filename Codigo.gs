@@ -5137,7 +5137,7 @@ function generarHtmlVidaPrograma(programaID) {
       : `<table style="width:100%;border-collapse:collapse;margin:8px 0;">${fila(heads, true)}${rows.map(r => fila(r)).join('')}</table>`;
 
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vida del Programa ${_escapeHtml(prog.programaID)}</title>
-    <style>body{font-family:Arial;padding:25px;color:#1e293b;} h1{font-size:17px;text-transform:uppercase;border-bottom:2px solid #1e293b;padding-bottom:8px;} h2.sec{font-size:13px;margin-top:22px;text-transform:uppercase;} @media print { body{padding:0;} }</style>
+    <style>body{font-family:Arial;padding:25px;color:#1e293b;} h1{font-size:17px;text-transform:uppercase;border-bottom:2px solid #1e293b;padding-bottom:8px;} h2.sec{font-size:13px;margin-top:22px;text-transform:uppercase;} @media print { body{padding:0;} #printActions{display:none !important;} }</style>
     <script>
       // [NUEVO] Al abrir esta ventana con "?print=pdf" se lanza el diálogo de
       // impresión del navegador, donde el usuario puede "Guardar como PDF".
@@ -5145,8 +5145,8 @@ function generarHtmlVidaPrograma(programaID) {
         if (location.search.indexOf('print=pdf') !== -1) { setTimeout(function () { window.print(); }, 400); }
       });
     </script></head><body>
-      <div style="text-align:right;margin-bottom:10px;">
-        <button onclick="window.print()" style="background:#1e293b;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:bold;">🖨️ Descargar / Imprimir (PDF)</button>
+      <div id="printActions" style="text-align:right;margin-bottom:10px;">
+        <button onclick="window.print()" style="background:#1e293b;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:bold;">Descargar PDF</button>
       </div>
       <h1>Historia de Vida del Programa de Posgrado</h1>
       <h2 style="font-size:14px;margin:4px 0;">${_escapeHtml(prog.nombrePrograma)}</h2>
