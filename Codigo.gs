@@ -4937,7 +4937,8 @@ function registrarCambioPrograma(payload) {
     // La excepción de cambio de modalidad corresponde exclusivamente al Ajuste No Sustantivo.
     if (vaAModalidad && tipo !== 'AJUSTE NO SUSTANTIVO') {
       return { success: false, message: 'El cambio de modalidad solo está permitido en un Ajuste No Sustantivo.' };
-    }    if (vaAModalidad && (!payload.modalidadNueva || String(payload.modalidadNueva).trim() === '')) {
+    }
+    if (vaAModalidad && (!payload.modalidadNueva || String(payload.modalidadNueva).trim() === '')) {
       return { success: false, message: 'Indicó cambio de modalidad pero no seleccionó la nueva modalidad.' };
     }
     // Sustantivo => siempre genera nuevo programa; No Sustantivo => solo si cambia modalidad
@@ -4998,9 +4999,34 @@ function registrarCambioPrograma(payload) {
         nuevoProgramaInfo = JSON.parse(resCrear.programa);
       }
 
-      // PASO 2: el original pasa a "No Vigente HRT" al guardar el ajuste (solo si genera nuevo programa)
+      // PASO 2: aplicar el cambio según su naturaleza.
       if (generaNuevoPrograma) {
-        updateProgramaPosgrado({ programaID: prog.programaID, estadoPropuesta: ESTADO_NO_VIGENTE_HRT });
+        // Ajuste Sustantivo o No Sustantivo con cambio de modalidad:
+        // el original deja de estar vigente y el nuevo programa continuará el proceso.
+        const resEstado = updateProgramaPosgrado({
+          programaID: prog.programaID,
+          estadoPropuesta: ESTADO_NO_VIGENTE_HRT
+        });
+        if (!resEstado || !resEstado.success) {
+          // Evitar dejar un programa nuevo duplicado si no se pudo cerrar el original.
+          deleteProgramaPosgrado(nuevoProgramaInfo.programaID);
+          return { success: false, message: 'No se pudo cambiar el estado del programa original a "' + ESTADO_NO_VIGENTE_HRT + '". No se completó el ajuste.' };
+        }
+      } else {
+        // Ajuste No Sustantivo sin cambio de modalidad:
+        // se actualizan los datos del mismo programa, que permanece VIGENTE.
+        const resActualizar = updateProgramaPosgrado({
+          programaID: prog.programaID,
+          nombrePrograma: payload.nombreProgramaNuevo !== undefined && String(payload.nombreProgramaNuevo).trim() !== ''
+            ? String(payload.nombreProgramaNuevo).trim() : prog.nombrePrograma,
+          mencion: payload.mencionNueva !== undefined ? String(payload.mencionNueva).trim() : (prog.mencion || ''),
+          duracion: payload.duracionNueva !== undefined ? String(payload.duracionNueva).trim() : (prog.duracion || ''),
+          costoAproximado: payload.costoAproximadoNuevo !== undefined
+            ? String(payload.costoAproximadoNuevo).trim() : (prog.costoAproximado || '')
+        });
+        if (!resActualizar || !resActualizar.success) {
+          return { success: false, message: 'No se pudieron aplicar los cambios al programa vigente: ' + (resActualizar ? resActualizar.message : 'error desconocido') };
+        }
       }
 
       // PASO 1: registro auditable del ajuste en el historial del programa original
