@@ -4552,7 +4552,7 @@ function autorizarPermisosAvanzados() {
 // [NUEVO] BLOQUES DE FUNCIONES ADICIONALES — SYSGUPUCE (v2026-10)
 // Pegar TODO este bloque al FINAL de Código.gs en Apps Script.
 // Cubre: Req 4 (Actas con firmas + reportería de consultas presenciales),
-//        Req 5 (Ciclo de vida / rediseños / reporte de vida del programa),
+//        Req 5 (Ciclo de vida / Ajustes Curriculares / reporte de vida del programa),
 //        Req 7 (saneamiento de fechas).
 // Ninguna función de este bloque reemplaza código existente; son adiciones puras.
 // ============================================================================
@@ -4853,7 +4853,7 @@ function getConsultasPresencialesPorRango(fechaInicio, fechaFin) {
 // SECCIÓN B: CICLO DE VIDA DEL PROGRAMA + AJUSTES CURRICULARES (Req 5)
 // Marco normativo de referencia: Art. 46-49 RUGS (creación/acreditación),
 // Res. CES sobre reformulación de programas. [REGLA DE NEGOCIO ACTUALIZADA]
-// Ya no existe "Rediseño": solo hay AJUSTES CURRICULARES con dos tipos:
+// La nomenclatura vigente es AJUSTES CURRICULARES con dos tipos:
 //  • SUSTANTIVOS       -> el programa original pasa a "No Vigente HRT" y se
 //                         crea un NUEVO programa (código SNIESE pendiente,
 //                         se completa luego en Seguimiento Regulatorio).
@@ -4893,7 +4893,7 @@ function getHistorialCambiosPrograma(programaID) {
     for (let i = 1; i < vals.length; i++) {
       if (String(vals[i][1]).trim() !== String(programaID).trim()) continue;
       out.push({
-        cambioID: vals[i][0], programaID: vals[i][1], tipoCambio: vals[i][2],
+        cambioID: vals[i][0], programaID: vals[i][1], tipoCambio: String(vals[i][2] || '').trim().toUpperCase() === 'REDISEÑO' ? 'AJUSTE SUSTANTIVO' : vals[i][2],
         fechaCambio: vals[i][3] instanceof Date ? Utilities.formatDate(vals[i][3], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(vals[i][3]),
         descripcion: vals[i][4], anterior: vals[i][5], nuevo: vals[i][6],
         resolucionCES: vals[i][7], resolucionHCU: vals[i][8], version: vals[i][9], registradoEl: vals[i][10]
