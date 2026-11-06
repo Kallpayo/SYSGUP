@@ -167,7 +167,7 @@
       <span class="text-xs font-bold text-slate-500 uppercase"><i class="fas fa-lock mr-1"></i>Programa VIGENTE:</span>
       <button type="button" id="btnRegistrarCambio"
         class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-colors">
-        <i class="fas fa-code-branch"></i> Registrar Rediseño / Cambio
+        <i class="fas fa-code-branch"></i> Registrar Ajuste Curricular
       </button>
       <button type="button" id="btnVerVidaPrograma"
         class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-colors">
@@ -185,40 +185,34 @@
   </form>
 </div>
 
-<!-- [NUEVO Req-5] MODAL DE REGISTRO DE REDISEÑO/CAMBIO -->
+<!-- Modal de Ajustes Curriculares -->
 <div id="cambioModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-  <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-    <h3 class="text-lg font-bold text-slate-800"><i class="fas fa-code-branch text-amber-500"></i> Registrar Cambio sobre Programa Vigente</h3>
-    <p class="text-xs text-slate-500">Este registro NO reinicia la fase regulatoria (RUGS Art. 46-49 / reformulación CES). Hereda la aprobación original y genera una nueva versión del programa. Las cohortes abiertas antes del cambio pertenecen a la versión anterior.</p>
-    <div><label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Cambio *</label>
-      <select id="cmbTipo" class="w-full text-sm rounded-lg border border-slate-300 p-2 bg-white">
-        <option value="REDISEÑO">Rediseño</option>
-        <option value="CAMBIO SUSTANTIVO">Cambio Sustantivo (pensum / duración / mención / modalidad)</option>
-        <option value="CAMBIO NO SUSTANTIVO">Cambio No Sustantivo (ajuste menor)</option>
-        <option value="ACTUALIZACIÓN NORMATIVA">Actualización Normativa</option>
-      </select></div>
+  <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+    <div><h3 class="text-lg font-bold text-slate-800"><i class="fas fa-code-branch text-amber-500"></i> Registrar Ajuste Curricular</h3>
+      <p class="text-xs text-slate-500 mt-1">Registre el tipo de ajuste y describa su justificación. Los datos actuales del programa se cargan para que pueda modificarlos cuando corresponda.</p></div>
+    <div><label for="cmbTipo" class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Ajuste *</label>
+      <select id="cmbTipo" class="w-full text-sm rounded-lg border border-slate-300 p-2 bg-white"><option value="AJUSTE SUSTANTIVO">Sustantivo</option><option value="AJUSTE NO SUSTANTIVO">No Sustantivo</option></select></div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div><label class="block text-xs font-semibold text-slate-700 mb-1">Fecha del Cambio</label>
-        <input type="date" id="cmbFecha" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
-      <div><label class="block text-xs font-semibold text-slate-700 mb-1">Resolución CES (si aplica)</label>
-        <input type="text" id="cmbResCES" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
+      <div><label for="cmbFecha" class="block text-xs font-semibold text-slate-700 mb-1">Fecha del Ajuste</label><input type="date" id="cmbFecha" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
+      <div><label for="cmbResCES" class="block text-xs font-semibold text-slate-700 mb-1">Resolución CES (si aplica)</label><input type="text" id="cmbResCES" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
     </div>
-    <div><label class="block text-xs font-semibold text-slate-700 mb-1">Descripción del cambio *</label>
-      <textarea id="cmbDesc" rows="3" class="w-full text-sm rounded-lg border border-slate-300 p-2" placeholder="Ej.: Reducción de 4 a 3 periodos académicos; modificación de pensum..."></textarea></div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div><label class="block text-xs font-semibold text-slate-700 mb-1">Estado Anterior</label>
-        <input type="text" id="cmbAnterior" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
-      <div><label class="block text-xs font-semibold text-slate-700 mb-1">Estado Nuevo</label>
-        <input type="text" id="cmbNuevo" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
+    <div class="border rounded-lg p-3 space-y-3 bg-slate-50"><h4 class="text-xs font-bold uppercase text-slate-700">Datos del programa ajustado</h4>
+      <div><label for="cmbNombreProgramaNuevo" class="block text-xs font-semibold text-slate-700 mb-1">Nombre del Programa</label><input type="text" id="cmbNombreProgramaNuevo" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div><label for="cmbMencionNueva" class="block text-xs font-semibold text-slate-700 mb-1">Mención</label><input type="text" id="cmbMencionNueva" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
+        <div><label for="cmbDuracionNueva" class="block text-xs font-semibold text-slate-700 mb-1">Duración</label><input type="text" id="cmbDuracionNueva" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
+        <div><label for="cmbCostoAproximadoNuevo" class="block text-xs font-semibold text-slate-700 mb-1">Costo aproximado</label><input type="text" id="cmbCostoAproximadoNuevo" class="w-full text-sm rounded-lg border border-slate-300 p-2"></div>
+        <div><label for="cmbModalidadOriginal" class="block text-xs font-semibold text-slate-700 mb-1">Modalidad actual</label><input type="text" id="cmbModalidadOriginal" readonly class="w-full text-sm rounded-lg border border-slate-300 p-2 bg-slate-100 text-slate-600"></div>
+      </div>
+      <div id="cmbCambioModalidadPregunta" class="hidden"><label for="cmbCambiaModalidad" class="block text-xs font-semibold text-slate-700 mb-1">¿Va a cambiar la modalidad?</label><select id="cmbCambiaModalidad" class="w-full text-sm rounded-lg border border-slate-300 p-2 bg-white"><option value="NO">No</option><option value="SI">Sí</option></select></div>
+      <div id="cmbModalidadNuevaContainer" class="hidden"><label for="cmbModalidadNueva" class="block text-xs font-semibold text-slate-700 mb-1">Nueva modalidad *</label><select id="cmbModalidadNueva" class="w-full text-sm rounded-lg border border-slate-300 p-2 bg-white"><option value="">Cargando modalidades...</option></select></div>
+      <p id="cmbModalidadBloqueadaInfo" class="text-xs text-amber-700 hidden">En un Ajuste Sustantivo la modalidad no se puede modificar.</p>
     </div>
+    <div><label for="cmbDesc" class="block text-xs font-semibold text-slate-700 mb-1">Descripción y justificación del ajuste *</label><textarea id="cmbDesc" rows="3" class="w-full text-sm rounded-lg border border-slate-300 p-2" placeholder="Explique qué se modifica y por qué se realiza el ajuste..."></textarea></div>
     <div id="cmbFeedback" class="hidden p-3 rounded-lg text-xs font-medium"></div>
-    <div class="flex justify-end gap-2">
-      <button type="button" id="cmbCancel" class="px-4 py-2 text-sm border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">Cancelar</button>
-      <button type="button" id="cmbSave" class="px-5 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold">Registrar Cambio</button>
-    </div>
+    <div class="flex justify-end gap-2"><button type="button" id="cmbCancel" class="px-4 py-2 text-sm border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">Cancelar</button><button type="button" id="cmbSave" class="px-5 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold">Registrar Ajuste</button></div>
   </div>
 </div>
-
 <!-- MODAL DE NOTIFICACIÓN SPA CORREGIDO CON TAILWIND -->
 <div id="progNotificationModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
   <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-6 text-center space-y-4">
@@ -355,74 +349,85 @@
     else if (searchBox) searchBox.style.display = '';
   }
 
-  // Modal de rediseño/cambio
+  // Modal y reglas de Ajustes Curriculares.
   const btnCambio = document.getElementById('btnRegistrarCambio');
   const modalCambio = document.getElementById('cambioModal');
+  const tipoAjuste = document.getElementById('cmbTipo');
+  const cambiaModalidad = document.getElementById('cmbCambiaModalidad');
+  function parseAdjustmentData(data) { if (!data) return {}; if (typeof data === 'string') { try { return JSON.parse(data); } catch (e) { return {}; } } return data; }
+  function actualizarCamposAjuste() {
+    const esSustantivo = tipoAjuste && tipoAjuste.value === 'AJUSTE SUSTANTIVO';
+    const pregunta = document.getElementById('cmbCambioModalidadPregunta');
+    const selector = document.getElementById('cmbModalidadNuevaContainer');
+    const bloqueada = document.getElementById('cmbModalidadBloqueadaInfo');
+    const modalidadNueva = document.getElementById('cmbModalidadNueva');
+    const original = document.getElementById('cmbModalidadOriginal');
+    if (pregunta) pregunta.classList.toggle('hidden', esSustantivo);
+    if (selector) selector.classList.toggle('hidden', esSustantivo || !cambiaModalidad || cambiaModalidad.value !== 'SI');
+    if (bloqueada) bloqueada.classList.toggle('hidden', !esSustantivo);
+    if (modalidadNueva) { modalidadNueva.disabled = esSustantivo || !cambiaModalidad || cambiaModalidad.value !== 'SI'; if (esSustantivo && original) modalidadNueva.value = original.value; }
+  }
+  function cargarModalidadesAjuste(modalidadActual) {
+    const select = document.getElementById('cmbModalidadNueva'); if (!select) return;
+    google.script.run.withSuccessHandler(data => {
+      const items = parseAdjustmentData(data); const modalidades = Array.isArray(items) ? items : [];
+      select.innerHTML = '<option value="">Seleccione...</option>'; modalidades.forEach(item => select.add(new Option(item, item)));
+      if (modalidadActual && !modalidades.includes(modalidadActual)) select.add(new Option(modalidadActual, modalidadActual));
+      select.value = modalidadActual || ''; actualizarCamposAjuste();
+    }).withFailureHandler(err => {
+      select.innerHTML = '<option value="">No se pudieron cargar las modalidades</option>';
+      const fb = document.getElementById('cmbFeedback'); fb.textContent = 'Error cargando modalidades: ' + err.message;
+      fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700'; fb.classList.remove('hidden');
+    }).getModalidadesParaAjuste();
+  }
+  function abrirModalAjuste() {
+    if (!modalCambio) return; const pid = document.getElementById('progProgramaID').value;
+    if (!pid) { showNotify('Primero debe guardar y cargar un programa vigente.'); return; }
+    modalCambio.classList.remove('hidden'); document.getElementById('cmbFecha').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('cmbResCES').value = ''; document.getElementById('cmbDesc').value = '';
+    document.getElementById('cmbFeedback').classList.add('hidden'); tipoAjuste.value = 'AJUSTE SUSTANTIVO';
+    if (cambiaModalidad) cambiaModalidad.value = 'NO'; actualizarCamposAjuste();
+    google.script.run.withSuccessHandler(data => {
+      const p = parseAdjustmentData(data);
+      if (!p.existe) { const fb = document.getElementById('cmbFeedback'); fb.textContent = 'No se pudieron recuperar los datos del programa para precargar el ajuste.'; fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700'; fb.classList.remove('hidden'); return; }
+      document.getElementById('cmbNombreProgramaNuevo').value = p.nombrePrograma || '';
+      document.getElementById('cmbMencionNueva').value = p.mencion || '';
+      document.getElementById('cmbDuracionNueva').value = p.duracion || '';
+      document.getElementById('cmbCostoAproximadoNuevo').value = p.costoAproximado || '';
+      document.getElementById('cmbModalidadOriginal').value = p.modalidad || '';
+      cargarModalidadesAjuste(p.modalidad || '');
+    }).withFailureHandler(err => { const fb = document.getElementById('cmbFeedback'); fb.textContent = 'Error al cargar el programa: ' + err.message; fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700'; fb.classList.remove('hidden'); }).getDatosProgramaParaAjuste(pid);
+  }
   if (btnCambio && modalCambio) {
-    btnCambio.onclick = () => {
-      modalCambio.classList.remove('hidden');
-      document.getElementById('cmbFecha').value = new Date().toISOString().slice(0, 10);
-      const fb = document.getElementById('cmbFeedback');
-      fb.classList.add('hidden');
-    };
+    btnCambio.onclick = abrirModalAjuste;
     document.getElementById('cmbCancel').onclick = () => modalCambio.classList.add('hidden');
+    if (tipoAjuste) tipoAjuste.addEventListener('change', actualizarCamposAjuste);
+    if (cambiaModalidad) cambiaModalidad.addEventListener('change', actualizarCamposAjuste);
     document.getElementById('cmbSave').onclick = () => {
-      const fb = document.getElementById('cmbFeedback');
-      const payload = {
-        programaID: document.getElementById('progProgramaID').value,
-        tipoCambio: document.getElementById('cmbTipo').value,
-        fechaCambio: document.getElementById('cmbFecha').value,
-        resolucionCES: document.getElementById('cmbResCES').value.trim(),
-        descripcion: document.getElementById('cmbDesc').value.trim(),
-        anterior: document.getElementById('cmbAnterior').value.trim(),
-        nuevo: document.getElementById('cmbNuevo').value.trim()
-      };
-      if (!payload.programaID) {
-        fb.textContent = 'Debe cargar un programa guardado antes de registrar cambios.';
-        fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700';
-        fb.classList.remove('hidden');
-        return;
-      }
-      if (!payload.descripcion) {
-        fb.textContent = 'La descripción del cambio es obligatoria (registro auditable).';
-        fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700';
-        fb.classList.remove('hidden');
-        return;
-      }
-      const saveBtn = document.getElementById('cmbSave');
-      saveBtn.disabled = true;
-      google.script.run
-        .withSuccessHandler(res => {
-          saveBtn.disabled = false;
-          fb.textContent = res.message;
-          fb.className = 'p-3 rounded-lg text-xs font-medium ' + (res.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700');
-          fb.classList.remove('hidden');
-          if (res.success) setTimeout(() => {
-            modalCambio.classList.add('hidden');
-            document.getElementById('cmbDesc').value = '';
-          }, 1600);
-        })
-        .withFailureHandler(err => {
-          saveBtn.disabled = false;
-          fb.textContent = 'Error: ' + err.message;
-          fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700';
-          fb.classList.remove('hidden');
-        })
-        .registrarCambioPrograma(payload);
+      const fb = document.getElementById('cmbFeedback'); const esSustantivo = tipoAjuste.value === 'AJUSTE SUSTANTIVO';
+      const vaACambiarModalidad = !esSustantivo && cambiaModalidad && cambiaModalidad.value === 'SI';
+      const payload = { programaID: document.getElementById('progProgramaID').value, tipoCambio: tipoAjuste.value, fechaCambio: document.getElementById('cmbFecha').value, resolucionCES: document.getElementById('cmbResCES').value.trim(), descripcion: document.getElementById('cmbDesc').value.trim(), nombreProgramaNuevo: document.getElementById('cmbNombreProgramaNuevo').value.trim(), mencionNueva: document.getElementById('cmbMencionNueva').value.trim(), duracionNueva: document.getElementById('cmbDuracionNueva').value.trim(), costoAproximadoNuevo: document.getElementById('cmbCostoAproximadoNuevo').value.trim(), cambiaModalidad: !!vaACambiarModalidad, modalidadNueva: vaACambiarModalidad ? document.getElementById('cmbModalidadNueva').value : '' };
+      if (!payload.programaID || !payload.descripcion) { fb.textContent = !payload.programaID ? 'Debe cargar un programa guardado antes de registrar el ajuste.' : 'La descripción y justificación del ajuste es obligatoria.'; fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700'; fb.classList.remove('hidden'); return; }
+      if (vaACambiarModalidad && !payload.modalidadNueva) { fb.textContent = 'Seleccione la nueva modalidad para continuar.'; fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700'; fb.classList.remove('hidden'); return; }
+      const saveBtn = document.getElementById('cmbSave'); saveBtn.disabled = true; saveBtn.textContent = 'Registrando...';
+      google.script.run.withSuccessHandler(res => { saveBtn.disabled = false; saveBtn.textContent = 'Registrar Ajuste'; fb.textContent = res && res.message ? res.message : 'No se recibió confirmación del servidor.'; fb.className = 'p-3 rounded-lg text-xs font-medium ' + (res && res.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'); fb.classList.remove('hidden'); if (res && res.success) setTimeout(() => modalCambio.classList.add('hidden'), 2200);
+      }).withFailureHandler(err => { saveBtn.disabled = false; saveBtn.textContent = 'Registrar Ajuste'; fb.textContent = 'Error: ' + err.message; fb.className = 'p-3 rounded-lg text-xs font-medium bg-red-50 text-red-700'; fb.classList.remove('hidden'); }).registrarCambioPrograma(payload);
     };
   }
-
   // Reporte de vida del programa
   const btnVida = document.getElementById('btnVerVidaPrograma');
   if (btnVida) {
     btnVida.onclick = () => {
       const pid = document.getElementById('progProgramaID').value;
       if (!pid) { showNotify('El programa debe estar guardado para generar su reporte de vida.'); return; }
+      const win = window.open('', '_blank');
+      if (!win) { showNotify('El navegador bloqueó la ventana del reporte. Permita las ventanas emergentes para este sitio.'); return; }
+      win.document.write('<p style="font-family:Arial;padding:24px">Generando Reporte de Vida...</p>');
       toggleLoading(true);
       google.script.run
         .withSuccessHandler(html => {
           toggleLoading(false);
-          const win = window.open('', '_blank');
+          win.document.open();
           win.document.write(html);
           win.document.close();
         })
