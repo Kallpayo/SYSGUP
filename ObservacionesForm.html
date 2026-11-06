@@ -240,8 +240,20 @@
 
     renderProgramHeader();
     loadTransitions(program.estadoPropuesta);
-    loadObservations(program.programaID);
-    window.resetObsForm();
+
+    // Los programas VIGENTES no reciben observaciones regulatorias.
+    const esVigente = String(program.estadoPropuesta || '').trim().toLowerCase() === 'vigente';
+    const historialSection = document.getElementById('obsTableContainer')?.parentElement;
+    const capturaSection = document.getElementById('addObservacionForm')?.parentElement;
+    if (historialSection) historialSection.classList.toggle('hidden', esVigente);
+    if (capturaSection) capturaSection.classList.toggle('hidden', esVigente);
+
+    if (esVigente) {
+      obsCache = [];
+    } else {
+      loadObservations(program.programaID);
+      window.resetObsForm();
+    }
   }
 
   function renderProgramHeader() {
