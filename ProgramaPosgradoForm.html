@@ -433,6 +433,11 @@
         })
         .withFailureHandler(err => {
           toggleLoading(false);
+          if (win && !win.closed) {
+            win.document.open();
+            win.document.write('<p style="font-family:Arial;padding:24px;color:#b91c1c">No se pudo generar el Reporte de Vida.</p>');
+            win.document.close();
+          }
           showNotify('Error al generar reporte de vida: ' + err.message);
         })
         .generarHtmlVidaPrograma(pid);
